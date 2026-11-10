@@ -25,7 +25,7 @@ songs = 5  # features of the matrix, or d
 
 # TODO: randomize the ratings of the songs first with considerable variance (some songs are widely agreed upon to better than others, such as Habits by osamason). From here, randomize the ratings by-user.
 # Generate an n×d matrix from standard normal distribution (mean=0, std=1)
-allRatings = torch.randint(low=1, high=11, size=(users, songs))# dataset of n integer ratings of d songs on a scale of 1-10 
+allRatings = torch.randint(low=-5, high=5, size=(users, songs))# dataset of n integer ratings of d songs on a scale of 1-10. Its fixed on the range of -5 to 5 for now, since I anticipate the expected rating will be a 5.
 theta = torch.rand(low=-0.5,high=0.5, size=(songs, songs))  # random theta for each rating betweeen -0.5 and 0.5, shape (d,d)
 b = torch.rand(users, songs)  # random bias for each user
 
@@ -37,28 +37,53 @@ print("b shape:", tuple(b.shape))
 y_candidate = allRatings @ theta + b  # compute the linear combination of ratings and theta, plus bias
 print("predictions shape:", tuple(y_candidate.shape))
 
+
+
+
+# TODO: Implement a most-similar song feature by finding the closest song to a given song in the rating space. This will be song B.
+
+# TODO: this currently finds the closest song to a given song in the rating space, but it doesn't account for the fact that the closest song may be the same song. We need to exclude the target song from the search space.
+def find_closest_song(matrix, song_index):
+    """
+    Find the index of the closest song to the given song in the rating space.
+
+    Parameters:
+    - matrix: n x d tensor of ratings (n users, d songs)
+    - song_index: index of the target song (0 <= song_index < d)
+
+    Returns:
+    - closest_idx: index of the closest song
+    """
+    target_col = matrix[:, song_index]  # Extract the column corresponding to the target song
+    diff = matrix - target_col
+    distances = torch.norm(diff, dim=0)  # norm along rows (dim=0 means per column)
+    # Find index of closest column
+    closest_idx = torch.argmin(distances).item()
+    return closest_idx
+
+
+
+print("Distances:", distances)
+print("Closest column index:", closest_idx)
+print("Closest column:", matrix[:, closest_idx])
+
+
+
+
+# -----------------------------------------------Work-in-progress--------------------------------------------------------
+
+# this doesn't need to be defined as a function, but it is for the sake of organization at the moment.
+def getMeanSongRating(allRatings,i):
+    return torch.mean(allRatings[:,i])
+
 # TODO: this is copied from MATH300's Homework 2 assignment; implement it
 def gradient_of_mean_loss(X, y, theta):
     p = torch.sigmoid(X @ theta)
     gradient = X.T @ (p - y) / len(y)  # 2a: gradient of the mean cross-entropy over the n rows, from X, p, and y; shape (3,)
     return gradient
 
-
 # TODO: replace stand-ins (features, is_bad, theta) with actual data
 for step in range(2000):
     theta = theta - 0.5 * gradient_of_mean_loss(allRatings, None, theta)
-
-
-
-
-
-## This segment computes the probability that a user will like a song, given that similar users liked it.
-
-# this doesn't need to be defined as a function, but it is for the sake of organization at the moment.
-def getMeanSongRating(allRatings,i):
-    return torch.mean(allRatings[:,i])
-
-allRatings @ theta
-
 ## List of sites I've tried to find adequate data from: MusicBrainz, AirBuds, RateYourMusic, Spotify
 ## Sources I've yet to try: Last.fm
